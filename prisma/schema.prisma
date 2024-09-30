@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Voter {
+  id                Int        @id @default(autoincrement())
+  walletAddress     String     @unique
+  totalRewardsEarned Decimal    @default(0.00)
+  votes             Vote[]     // Relation to Votes
+  
+}
+
+model Company {
+  id                Int        @id @default(autoincrement())
+  walletAddress     String     @unique
+  referralCode      String?
+  totalMoneySpent   Decimal    @default(0.00)
+  referralsSent     Referral[] @relation("ReferrerRelation")
+  referralsReceived Referral[] @relation("ReferredUserRelation")
+  questions         Question[] 
+  questionForms     QuestionForm[] // Relation to QuestionForms
+}
+
+model QuestionForm {
+  id                Int        @id @default(autoincrement())
+  QuestionFormId    String
+  createdBy         Company    @relation(fields: [companyId], references: [id])
+  companyId         Int
+  voteLimit         Int
+  totalReward       Decimal
+  totalVotes        Int       @default(0)
+  rewardPerVote     Decimal
+  createdAt         DateTime  @default(now())
+  votes             Vote[]    // Relation to Votes
+}
+
+model Vote {
+  id              Int          @id @default(autoincrement())
+  questionId      Int?
+  question        Question?    @relation(fields: [questionId], references: [id])
+  voterId         Int
+  voter           Voter        @relation(fields: [voterId], references: [id])
+  questionFormId  Int?
+  questionForm    QuestionForm? @relation(fields: [questionFormId], references: [id])
+  createdAt       DateTime     @default(now())
+}
+
+model Referral {
+  id              Int       @id @default(autoincrement())
+  referrerId      Int
+  referrer        Company   @relation(name: "ReferrerRelation", fields: [referrerId], references: [id])
+  referredCompanyId  Int
+  referredCompany  Company   @relation(name: "ReferredUserRelation", fields: [referredCompanyId], references: [id])
+  referralReward  Decimal    @default(0.00)
+}
+
+model Question {
+  id            Int       @id @default(autoincrement())
+  companyId     Int
+  company       Company   @relation(fields: [companyId], references: [id])
+  title         String
+  options       Json
+  voteLimit     Int
+  totalReward   Decimal
+  totalVotes    Int       @default(0)
+  rewardPerVote Decimal
+  createdAt     DateTime  @default(now())
+  votes         Vote[]    // Relation to Votes
+}
